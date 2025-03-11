@@ -32,6 +32,9 @@ function Timer({
         setMinute(0);
         setCurrentTimerIndex((prev) => prev + 1);
       } else {
+        if (alarmRef.current) {
+          alarmRef.current.play();
+        }
         setStatus(false);
       }
     }

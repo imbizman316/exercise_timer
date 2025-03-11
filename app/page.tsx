@@ -1,101 +1,275 @@
-import Image from "next/image";
+"use client";
+
+import { Colors } from "./constants/colors";
+import { ChangeEvent, useEffect, useState } from "react";
+import { Times } from "./constants/types";
+
+function Timer({
+  times,
+  setCurrentScreen,
+}: {
+  times: Times;
+  setCurrentScreen: React.Dispatch<React.SetStateAction<"setting" | "timer">>;
+}) {
+  const [currentTimerIndex, setCurrentTimerIndex] = useState(0);
+
+  const [status, setStatus] = useState(true);
+
+  const { time, title } = times[currentTimerIndex];
+
+  const [second, setSecond] = useState(0);
+  const [minute, setMinute] = useState(0);
+
+  useEffect(() => {
+    if (second + minute * 60 >= time) {
+      if (currentTimerIndex < times.length - 1) {
+        setSecond(0);
+        setMinute(0);
+        setCurrentTimerIndex((prev) => prev + 1);
+      } else {
+        setStatus(false);
+      }
+    }
+
+    const timeIncrease = setTimeout(() => {
+      if (status && !(second + minute * 60 >= time)) {
+        setSecond((prev) => prev + 1);
+      }
+    }, 1000);
+
+    if (second >= 60) {
+      setMinute((prev) => prev + 1);
+      setSecond(0);
+    }
+
+    return () => {
+      clearTimeout(timeIncrease);
+    };
+  }, [second]);
+
+  return (
+    <div className="w-full h-full flex flex-col items-center pt-28">
+      <h1
+        className="font-bold text-center"
+        style={{
+          color: Colors.fontTimeWhite,
+          paddingBottom: 25,
+          fontSize: 50,
+        }}
+      >
+        {currentTimerIndex === times.length - 1 && second + minute * 60 >= time
+          ? "ALL DONE. GOOD JOB"
+          : title}
+      </h1>
+      <div
+        className="rounded-full border-solid border-1 border-white flex items-center justify-center"
+        style={{
+          width: 300,
+          height: 300,
+          backgroundColor: Colors.unselectedBlack,
+        }}
+      >
+        <p
+          style={{
+            color: Colors.fontTimeWhite,
+            fontSize: 100,
+            fontWeight: 800,
+          }}
+        >
+          {minute.toString().length === 1 && "0"}
+          {minute}:{second.toString().length <= 1 && "0"}
+          {second}
+        </p>
+      </div>
+      <button
+        className="py-5 px-20 rounded-4xl z-20 mt-20"
+        style={{
+          backgroundColor: Colors.selectedDarkPink,
+          color: status ? Colors.settingBackground : Colors.grayInputBackground,
+          fontWeight: 800,
+        }}
+        onClick={() => setStatus(!status)}
+      >
+        PAUSE
+      </button>
+      <button
+        className="py-5 px-20 rounded-4xl z-20 mt-20"
+        style={{
+          backgroundColor: Colors.selectedDarkPink,
+          color: Colors.settingBackground,
+          fontWeight: 800,
+        }}
+        onClick={() => setCurrentScreen("setting")}
+      >
+        BACK TO SETTING
+      </button>
+    </div>
+  );
+}
+
+function SettingItem({
+  id,
+  times,
+  setTimes,
+  index,
+}: {
+  id: number;
+  index: number;
+  times: Times;
+  setTimes: React.Dispatch<React.SetStateAction<Times>>;
+}) {
+  const handleDelete = () => {
+    setTimes((prev: Times) =>
+      prev.filter((item) => item.id.toString() !== id.toString())
+    );
+  };
+  const timeItem = times.find((time) => time.id.toString() === id.toString());
+
+  const { time, title } = timeItem ? timeItem : { time: 0, title: "" };
+
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setTimes((prev) =>
+      prev.map((item) => {
+        if (item.id.toString() === id.toString()) {
+          return {
+            ...item,
+            [e.target.name]: e.target.value,
+          };
+        } else {
+          return { ...item };
+        }
+      })
+    );
+  };
+
+  return (
+    <div className="flex flex-row w-full gap-3 items-center">
+      <p>{index}.</p>
+      <input
+        style={{
+          backgroundColor: Colors.grayInputBackground,
+          width: "70%",
+          fontSize: 21,
+        }}
+        type="text"
+        placeholder="Title"
+        value={title}
+        name={"title"}
+        onChange={handleChange}
+      />
+      <input
+        style={{
+          backgroundColor: Colors.grayInputBackground,
+          width: "30%",
+          fontSize: 21,
+        }}
+        type="number"
+        min={0}
+        max={100}
+        placeholder="Second"
+        value={time}
+        name={"time"}
+        onChange={handleChange}
+      />
+      <button onClick={handleDelete}>delete</button>
+    </div>
+  );
+}
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [times, setTimes] = useState<Times>([]);
+  const [currentScreen, setCurrentScreen] = useState<"setting" | "timer">(
+    "setting"
+  );
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  const handleAddTime = () => {
+    setTimes(
+      (prev): Times => [
+        ...prev,
+        {
+          id: times.length + 1,
+          time: 0,
+          title: "",
+        },
+      ]
+    );
+  };
+
+  return (
+    <>
+      <div
+        style={{
+          backgroundColor: Colors.mainBackgroundBlue,
+          width: "100vw",
+          height: "100vh",
+          display: "flex",
+          alignItems: "start",
+          justifyContent: "center",
+          paddingTop: 20,
+        }}
+      >
+        {currentScreen === "setting" && (
+          <div
+            className="rounded-xl"
+            style={{
+              backgroundColor: Colors.settingBackground,
+              width: "90%",
+              height: "85%",
+              display: "flex",
+              alignItems: "center",
+              flexDirection: "column",
+              padding: 20,
+              position: "relative",
+            }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+            <button
+              className="py-3 w-full rounded-lg"
+              style={{
+                backgroundColor: Colors.selectedDarkPink,
+                color: Colors.settingBackground,
+                fontWeight: 800,
+              }}
+              onClick={handleAddTime}
+            >
+              Add time
+            </button>
+            <div className="mt-15 flex flex-col gap-5 w-full overflow-scroll">
+              {times.map((time, index) => (
+                <SettingItem
+                  index={index}
+                  key={time.id}
+                  id={time.id}
+                  times={times}
+                  setTimes={setTimes}
+                />
+              ))}
+            </div>
+            <div
+              className="w-full absolute bottom-[-30px]"
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <button
+                className="py-5 px-20 rounded-4xl z-20"
+                style={{
+                  backgroundColor: Colors.selectedDarkPink,
+                  color: Colors.settingBackground,
+                  fontWeight: 800,
+                }}
+                onClick={() => setCurrentScreen("timer")}
+              >
+                START
+              </button>
+            </div>
+          </div>
+        )}
+        {currentScreen === "timer" && (
+          <Timer times={times} setCurrentScreen={setCurrentScreen} />
+        )}
+      </div>
+    </>
   );
 }

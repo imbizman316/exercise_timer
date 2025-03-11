@@ -1,7 +1,7 @@
 "use client";
 
 import { Colors } from "./constants/colors";
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { Times } from "./constants/types";
 
 function Timer({
@@ -20,9 +20,14 @@ function Timer({
   const [second, setSecond] = useState(0);
   const [minute, setMinute] = useState(0);
 
+  const alarmRef = useRef<HTMLAudioElement>(null);
+
   useEffect(() => {
     if (second + minute * 60 >= time) {
       if (currentTimerIndex < times.length - 1) {
+        if (alarmRef.current) {
+          alarmRef.current.play();
+        }
         setSecond(0);
         setMinute(0);
         setCurrentTimerIndex((prev) => prev + 1);
@@ -103,6 +108,9 @@ function Timer({
       >
         BACK TO SETTING
       </button>
+      <>
+        <audio ref={alarmRef} src="/audio/alarm.wav" />
+      </>
     </div>
   );
 }
